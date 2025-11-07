@@ -37,7 +37,7 @@ container_t loading_memory(FILE *input) {
         exit(1);
     };
     fgetc(input);
-
+    
     // printf("[DEBUG] container_size: %u\n", container.container_size);
     
     //alocando memoria para container.info 
@@ -177,19 +177,19 @@ void mymerge_sort(void *arr, size_t elements_size, size_t size, int (*compare)(c
     @brief: função principal
 */
 int main(int argc, char *argv[]) {
-    //abrindo arquivos
+    // abrindo arquivos
     if(argc < 3) {
         printf("Usage: %s <file>\n", argv[0]);
         return 1;
     };
     FILE *input = fopen(argv[1], "r");
     if(input == NULL) {
-        printf("Error opening file\n");
+        printf("Error opening input file\n");
         return 1;
     };
-    FILE *output = fopen("index.txt", "w");
+    FILE *output = fopen(argv[2], "w");
     if(output == NULL) {
-        printf("Error opening file\n");
+        printf("Error opening output file\n");
         return 1;
     };
 
