@@ -37,7 +37,6 @@ container_t loading_memory(FILE *input) {
         exit(1);
     };
     fgetc(input);
-    
     // printf("[DEBUG] container_size: %u\n", container.container_size);
     
     //alocando memoria para container.info 
