@@ -1,42 +1,39 @@
-# Define o compilador que vamos usar (gcc é o mais comum)
+# --- Configuração (Somente Windows) ---
 CC = gcc
+CFLAGS = -Wall -g -std=c99
 
-# Flags de compilação (boas práticas: -Wall liga todos os warnings, -g inclui infos de debug)
-CFLAGS = -Wall -g
-
-# --- Nossos Arquivos ---
-
-# Onde está o seu código fonte
+# --- Arquivos do Projeto ---
+EXECUTABLE = meu_programa.exe
 SRC_FILE = src/index.c
-
-# Onde está seu arquivo de entrada de testes
-TEST_FILE = testes/testes.txt
-
-# O nome que você quer dar ao seu executável (ele será criado na raiz)
-EXECUTABLE = meu_programa
-
-# Onde a saída deve ser salva
 OUTPUT_DIR = saida_testes
-OUTPUT_FILE = $(OUTPUT_DIR)/resultado.txt
 
+# --- Descoberta Automática de Testes ---
+INPUTS = $(wildcard testes/*.txt)
+OUTPUTS = $(patsubst testes/%.txt, $(OUTPUT_DIR)/%.out, $(INPUTS))
 
 # --- "Receitas" (Targets) ---
+.PHONY: all test clean
 
-# 'all' é a receita padrão. Se você só digitar 'make', é ela que roda.
-# Ela compila o fonte da 'src' e gera o executável na raiz.
-all:
-	$(CC) $(CFLAGS) -o $(EXECUTABLE) $(SRC_FILE)
+# 'all' (padrão)
+all: $(EXECUTABLE)
 
-# 'run' agora faz tudo: compila, cria a pasta de saída, e roda
-# o programa redirecionando a entrada E a saída.
-run: all
-	@mkdir -p $(OUTPUT_DIR)
-	./$(EXECUTABLE) < $(TEST_FILE) > $(OUTPUT_FILE)
-	@echo "Feito! Resultado salvo em $(OUTPUT_FILE)"
+# Compila o executável
+$(EXECUTABLE): $(SRC_FILE)
+	$(CC) $(CFLAGS) -o $@ $(SRC_FILE)
 
-# 'clean' agora também apaga a pasta de saídas.
+# 'test' depende de 'all' e de todas as saídas
+test: all $(OUTPUTS)
+	@echo "--- Todos os testes foram gerados! ---"
+
+# --- A REGRA MÁGICA ---
+$(OUTPUT_DIR)/%.out: testes/%.txt $(EXECUTABLE)
+	@mkdir $(OUTPUT_DIR) 2>NUL || exit 0
+	@echo "Rodando teste: $< ..."
+	.\$(EXECUTABLE) $< $@
+
+# 'clean': Limpa tudo
 clean:
 	@echo "Limpando..."
-	@rm -f $(EXECUTABLE)
-	@rm -rf $(OUTPUT_DIR)
+	@-del /f /q $(EXECUTABLE) 2>NUL
+	@-rmdir /s /q $(OUTPUT_DIR) 2>NUL
 	@echo "Limpo!"
