@@ -1,86 +1,104 @@
-# 🚢 Projeto PAA: Fiscalização Portuária (Poxim Tech)
+<div align="center">
 
-Este projeto, desenvolvido para a disciplina de Projeto e Análise de Algoritmos (PAA), simula um sistema de triagem de contêineres para fiscalização aduaneira no Porto de Sergipe, conforme as especificações da empresa fictícia Poxim Tech.
+# 🚢 Projeto de Fiscalização Portuária (PAA)
+
+**Uma solução de alta performance em C para triagem de contêineres usando Tabelas Hash e MergeSort.**
+
+</div>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Linguagem-C-blue.svg" alt="Linguagem C">
+  <img src="https://img.shields.io/badge/Padrão-C99-blue.svg" alt="Padrão C99">
+  <img src="https://img.shields.io/badge/Build-Makefile-brightgreen.svg" alt="Build com Makefile">
+  <img src="https://img.shields.io/badge/Status-Completo-brightgreen.svg" alt="Status Completo">
+  <img src="https://img.shields.io/badge/Licença-MIT-yellow.svg" alt="Licença MIT">
+</p>
+
+> Este projeto implementa um sistema de fiscalização para a empresa fictícia Poxim Tech, capaz de processar e auditar milhares de manifestos de contêineres, priorizando-os para fiscalização baseada em regras de negócio complexas.
+
+<br>
+
+## 📜 Sumário
+
+* [O Problema](#-o-problema)
+* [A Solução Técnica](#-a-solução-técnica)
+* [Stack Tecnológica](#-stack-tecnológica)
+* [Como Compilar e Rodar](#-como-compilar-e-rodar)
+    * [Pré-requisitos](#pré-requisitos)
+    * [Comandos do Makefile](#comandos-do-makefile)
+* [Formato de I/O](#-formato-de-io)
+* [Autor](#-autor)
+
+<br>
 
 ## 🎯 O Problema
 
-O objetivo é automatizar a fiscalização. Todos os contêineres possuem dados de cadastro (código, CNPJ, peso) e dados da triagem (o que foi lido no porto). A fiscalização ocorre se houver discrepância.
+A empresa Poxim Tech precisa automatizar a fiscalização de contêineres no Porto de Sergipe. O sistema deve comparar os dados cadastrados (`n` contêineres) com os dados lidos na triagem (`m` contêineres) e criar uma fila de fiscalização baseada em duas prioridades:
 
-A regra de negócio principal é a **ordem de prioridade** para a fila de fiscalização:
-1.  **Divergência de CNPJ:** Contêineres onde o CNPJ lido é diferente do CNPJ cadastrado (Prioridade 1).
-2.  **Maior Diferença Percentual de Peso:** Contêineres onde a diferença de peso é maior que 10% (Prioridade 2).
+1.  **Prioridade 1:** Divergência de CNPJ.
+2.  **Prioridade 2:** Diferença percentual de peso líquido superior a 10%.
 
-Crucialmente, a fila de Prioridade 2 deve ser ordenada pela maior diferença percentual primeiro (ordem decrescente).
+A fila de Prioridade 2 deve ser ordenada da maior diferença percentual para a menor.
 
-## 💡 A Solução
+## 💡 A Solução Técnica
 
-Para resolver o problema de forma eficiente, a seguinte abordagem foi implementada em C:
+Para garantir performance e eficiência, a solução foi dividida em duas etapas principais, utilizando estruturas de dados clássicas de PAA:
 
-1.  **Armazenamento (Tabela Hash):** Os `n` contêineres do cadastro são lidos e armazenados em uma **Tabela Hash**. O `código` do contêiner é usado como chave. Isso nos permite buscar os dados de cadastro de qualquer contêiner em tempo O(1), em média.
+### 1. Tabela Hash (Armazenamento e Busca)
 
-2.  **Comparação (Triagem):** Os `m` contêineres da triagem são lidos um a um. Para cada um:
-    * Buscamos seu `código` na Tabela Hash para obter os dados de cadastro.
-    * Comparamos os dados lidos (`_m`) com os dados cadastrados (`_n`).
-    * Se `cnpj_m != cnpj_n`, o contêiner é marcado como **Prioridade 1**.
-    * Se `cnpj_m == cnpj_n` mas a `abs(peso_m - peso_n) / peso_n > 0.10`, o contêiner é marcado como **Prioridade 2**, e sua diferença percentual é calculada e armazenada.
+Os `n` contêineres do cadastro são armazenados em uma **Tabela Hash** (Hashing de Endereçamento Aberto ou Fechado).
+* **Chave:** O `código` do contêiner.
+* **Resultado:** Isso permite que, durante a triagem, os dados de cadastro de qualquer um dos `m` contêineres sejam encontrados em tempo **O(1)** (em média).
 
-3.  **Ordenação (MergeSort):** Todos os contêineres marcados para fiscalização (Prioridade 1 ou 2) são adicionados a um vetor. Este vetor é então ordenado usando **MergeSort** com uma função de comparação customizada que segue as regras de negócio:
-    * `a.prioridade < b.prioridade` (Prioridade 1 sempre vem antes da 2).
-    * Se `a.prioridade == 2 && b.prioridade == 2`, então `a.percentual > b.percentual` (maior percentual vem primeiro).
-    * (Opcional) Como critério de desempate, a ordem de entrada na triagem é mantida (o MergeSort é um algoritmo de ordenação estável).
+### 2. MergeSort (Ordenação e Priorização)
 
-## 🛠️ Estruturas de Dados e Algoritmos
+Os `k` contêineres que apresentam discrepâncias são adicionados a um vetor. Este vetor é então ordenado usando **MergeSort**.
+* **Por quê?** O MergeSort garante complexidade **O(k log k)** no pior caso e é um algoritmo de ordenação estável.
+* **Função de Comparação:** A complexidade real está na função `compare()`, que implementa a regra de negócio de múltiplas prioridades (primeiro por tipo de prioridade, depois por percentual decrescente).
 
-* **Tabela Hash:** Usada para armazenar os `n` contêineres.
-    * **Complexidade de Inserção:** O(1) em média.
-    * **Complexidade de Busca:** O(1) em média.
-* **MergeSort:** Usado para ordenar os `k` contêineres fiscalizados.
-    * **Complexidade de Ordenação:** O(k log k) em todos os casos.
+<br>
+
+## 🛠️ Stack Tecnológica
+
+* **Linguagem:** `C` (Padrão C99)
+* **Compilação:** `GCC`
+* **Build System:** `Make` (com um Makefile portátil para Windows/Linux)
+* **Controle de Versão:** `Git` e `GitHub`
+
+<br>
 
 ## 🚀 Como Compilar e Rodar
 
-O projeto utiliza um `Makefile` portátil que automatiza a compilação e os testes em ambientes Windows (com MinGW) e Linux/macOS.
+Este projeto utiliza um `Makefile` robusto que detecta automaticamente o sistema operacional (Windows ou Linux/macOS) para usar os comandos de compilação e limpeza corretos.
 
-### Requisitos
+### Pré-requisitos
 
-* `gcc` (ou um compilador C)
-* `make` (ou `mingw32-make` no Windows)
+* `gcc` (Compilador C)
+* `make` (no Linux/macOS) ou `mingw32-make` (no Windows)
 
-### Comandos
+### Comandos do Makefile
 
-O `Makefile` detecta automaticamente o sistema operacional para usar os comandos corretos (`del`/`rm`, `.\`/`./`, `.exe`/etc.).
+Abra o terminal na raiz do projeto e execute:
 
-1.  **Compilar o programa:**
-    ```bash
-    # No Linux/macOS
-    make all
+| Comando | Ação |
+| :--- | :--- |
+| `make all` (ou `mingw32-make all`) | **Compila** o executável `meu_programa` (ou `.exe`). |
+| `make test` (ou `mingw32-make test`) | **Roda todos os testes.** Encontra todos os `*.txt` na pasta `testes/`, executa o programa e salva os resultados em `saida_testes/`. |
+| `make clean` (ou `mingw32-make clean`) | **Limpa** o projeto, apagando o executável e a pasta `saida_testes/`. |
 
-    # No Windows (com MinGW)
-    mingw32-make all
-    ```
-    Isso gera o executável `meu_programa` (ou `meu_programa.exe`).
+<br>
 
-2.  **Rodar todos os testes (Recomendado):**
-    Este comando compila (se necessário) e roda o programa para **todos** os arquivos `*.txt` encontrados na pasta `testes/`, salvando os resultados em `saida_testes/`.
+---
 
-    ```bash
-    # No Linux/macOS
-    make test
+### 🌟 Dica "Pomposa" Bônus: Adicione um GIF
 
-    # No Windows (com MinGW)
-    mingw32-make test
-    ```
+Nada grita "projeto profissional" mais do que um GIF do programa rodando.
 
-3.  **Limpar o projeto:**
-    Apaga o executável e a pasta `saida_testes/` gerada.
-    ```bash
-    # No Linux/macOS
-    make clean
+1.  Use um gravador de terminal (como o [asciinema](httpsa://asciinema.org/)) para gravar você rodando `mingw32-make test`.
+2.  Converta a gravação para GIF.
+3.  Jogue o GIF no seu README.
 
-    # No Windows (com MinGW)
-    mingw32-make clean
-    ```
+```markdown
+## 🎥 Demonstração
 
-## 📦 Formato de I/O
-
-### Entrada (`testes/exemplo.txt`)
+[AQUI VOCÊ COLOCA O SEU GIF]
