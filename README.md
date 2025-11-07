@@ -27,7 +27,6 @@
     * [Pré-requisitos](#pré-requisitos)
     * [Comandos do Makefile](#comandos-do-makefile)
 * [Formato de I/O](#-formato-de-io)
-* [Autor](#-autor)
 
 <br>
 
@@ -87,18 +86,3 @@ Abra o terminal na raiz do projeto e execute:
 | `make clean` (ou `mingw32-make clean`) | **Limpa** o projeto, apagando o executável e a pasta `saida_testes/`. |
 
 <br>
-
----
-
-### 🌟 Dica "Pomposa" Bônus: Adicione um GIF
-
-Nada grita "projeto profissional" mais do que um GIF do programa rodando.
-
-1.  Use um gravador de terminal (como o [asciinema](httpsa://asciinema.org/)) para gravar você rodando `mingw32-make test`.
-2.  Converta a gravação para GIF.
-3.  Jogue o GIF no seu README.
-
-```markdown
-## 🎥 Demonstração
-
-[AQUI VOCÊ COLOCA O SEU GIF]
