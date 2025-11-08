@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 
-// Incluindo nossos módulos
+// Incluindo módulos
 #include "structs.h"
 #include "hash_table.h"
 #include "mergesort.h"
@@ -14,7 +14,6 @@
     @brief: lê o arquivo e cria as structs
 */
 container_t loading_memory(FILE *input) {
-    // (Implementação do loading_memory... exatamente como você escreveu)
     container_t container;
     
     if(fscanf(input, "%u", &container.container_size) != 1){
