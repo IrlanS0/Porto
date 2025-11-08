@@ -238,14 +238,41 @@ void insert_hash(hash_table_t *ht, container_record_t data){
     @brief: procura na tabela hash
 */
 container_record_t *search_hash(hash_table_t *ht, char *code){
-    
+    // Calcula o indice onde o 'code' deveria estar
+    uint64_t index = string_hash(code, ht->size);
+
+    // Pegar o primeiro no da lista ligada nesse indice
+    hash_node_t *current = ht->table[index];
+
+    // Percorrer a lista ligada (o 'encadeamento')
+    while(!current)
+    {
+        if(strcmp(current->data.code, code) == 0){
+            // Retorna um ponteiro para os dados do container
+            return &current->data;
+        };
+
+        current = current->next;
+    }
+
+    printf("[DEBUG] Nao encontrado: %s\n", code);
+    return NULL;
 };
 
 /*
     @brief: libera memoria alocada para tabela hash
 */
 void free_hash_table(hash_table_t *ht){
-
+    for(int i = 0; i < ht->size; i++){
+        hash_node_t *current = ht->table[i];
+        while(current){
+            hash_node_t *next = current->next;
+            free(current);
+            current = next;
+        };
+    }
+    free(ht->table);
+    free(ht);
 };
 
 /*
@@ -284,8 +311,31 @@ int main(int argc, char *argv[]) {
     {
         insert_hash(ht, loaded_data.info[i]);
     };
+
+    // Processando busca
+    for (uint32_t i = 0; i < loaded_data.container_selected; i++){
+        // Pega o item da lista 'search'
+        container_record_t *item_busca = &loaded_data.search[i];
+
+        // Procura o 'code' na tabela hash (que contem os dados de 'info')
+        container_record_t *item_cadastrado = search_hash(ht, item_busca->code);
+
+        if (!item_cadastrado){
+            if(strcmp(item_cadastrado->code, item_busca->code) == 0){
+                fprintf(output, "%s %s %u\n", item_busca->code, item_busca->cnpj, item_busca->peso);
+            }
+            // else if(){
+                // verificar peso percentual aqui
+            // }
+            else {
+                fprintf(output, "O container: |%s| |%s| |%u| nao foi encontrado\n", item_busca->code, item_busca->cnpj, item_busca->peso);
+            }
+        }
+    }
     
     //liberando memoria, fechando arquivos
+    free_hash_table(ht);
+    ht = NULL;
     if(loaded_data.info) {
         free(loaded_data.info);
         loaded_data.info = NULL;
