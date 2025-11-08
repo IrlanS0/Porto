@@ -10,6 +10,7 @@ typedef struct {
     char code[12];
     char cnpj[20];
     uint32_t peso;
+    uint32_t original_index;
 } container_record_t;
 
 typedef struct {
@@ -29,6 +30,21 @@ typedef struct hash_table{
     uint32_t size; // Tamanho do array
 }hash_table_t;
 
+// Define as causas de fiscalização (CNPJ é prioridade)
+typedef enum {
+    CAUSA_CNPJ = 0, // Prioridade 0
+    CAUSA_PESO = 1, // Prioridade 1
+    CAUSA_NENHUMA = 2
+} fiscal_causa_t;
+
+// Struct para o nosso array de fiscalização (o que será ordenado)
+typedef struct {
+    fiscal_causa_t causa;       
+    uint32_t original_index;    
+    container_record_t data_cadastrado;
+    container_record_t data_busca;
+} fiscal_item_t;
+
 /*
     @brief: lê o arquivo e cria as structs
 */
@@ -42,7 +58,6 @@ container_t loading_memory(FILE *input) {
         exit(1);
     };
     fgetc(input);
-    // printf("[DEBUG] container_size: %u\n", container.container_size);
     
     //alocando memoria para container.info 
     container.info = malloc(container.container_size * sizeof(container_record_t));
@@ -58,7 +73,7 @@ container_t loading_memory(FILE *input) {
             printf("Erro ao ler a linha: %u\n", tmp + 1);
             break;
         }
-        // printf("[DEBUG] container info: \nCode: %s\nCNPJ: %s\nPeso: %u\n", container.info[tmp].code, container.info[tmp].cnpj, container.info[tmp].peso);
+        container.info[tmp].original_index = tmp;
         tmp++;
     }
     
@@ -69,7 +84,6 @@ container_t loading_memory(FILE *input) {
         exit(1);
     };
     fgetc(input);
-    // printf("[DEBUG] container_selected: %u\n", container.container_selected);
     
     //alocando memoria para container.search
     container.search = malloc(container.container_selected * sizeof(container_record_t));
@@ -86,7 +100,6 @@ container_t loading_memory(FILE *input) {
             printf("Erro ao ler a linha: %u\n", container.container_selected + tmp + 1);
             break;
         }
-        // printf("[DEBUG] container search: \nCode: %s\nCNPJ: %s\nPeso: %u\n", container.search[tmp].code, container.search[tmp].cnpj, container.search[tmp].peso);
         tmp++;
     }
 
@@ -245,7 +258,7 @@ container_record_t *search_hash(hash_table_t *ht, char *code){
     hash_node_t *current = ht->table[index];
 
     // Percorrer a lista ligada (o 'encadeamento')
-    while(!current)
+    while(current)
     {
         if(strcmp(current->data.code, code) == 0){
             // Retorna um ponteiro para os dados do container
@@ -255,7 +268,6 @@ container_record_t *search_hash(hash_table_t *ht, char *code){
         current = current->next;
     }
 
-    printf("[DEBUG] Nao encontrado: %s\n", code);
     return NULL;
 };
 
@@ -274,6 +286,40 @@ void free_hash_table(hash_table_t *ht){
     free(ht->table);
     free(ht);
 };
+
+/*
+    @brief: verifica se peso do container é válido
+*/
+int fiscalizar_peso(uint32_t peso_cadastrado, uint32_t peso_selecionado){
+    // Converter para 'double' e fazer contas com decimais
+    double a = (double)peso_cadastrado;
+    double b = (double)peso_selecionado;
+    
+    // calcular o limite (10% acima do cadastrado)
+    double limite = a * 1.1;
+
+    if(b > limite){
+        return 1;
+    }
+    return 0;
+};
+
+/*
+    @brief: Compara dois itens de fiscalização (para o Merge Sort)
+*/
+int compare_fiscal_item(const void *a, const void *b) {
+    const fiscal_item_t *itemA = (const fiscal_item_t *)a;
+    const fiscal_item_t *itemB = (const fiscal_item_t *)b;
+
+    // 1. Prioridade 1: Causa da fiscalização (CNPJ vem antes de PESO)
+    if (itemA->causa != itemB->causa) {
+        return (itemA->causa - itemB->causa);
+    }
+
+    // 2. Prioridade 2 (Desempate): Ordem de cadastramento
+    //    (Se a causa for a mesma, ordena pelo índice original)
+    return (itemA->original_index - itemB->original_index);
+}
 
 /*
     @brief: função principal
@@ -312,38 +358,86 @@ int main(int argc, char *argv[]) {
         insert_hash(ht, loaded_data.info[i]);
     };
 
-    // Processando busca
-    for (uint32_t i = 0; i < loaded_data.container_selected; i++){
-        // Pega o item da lista 'search'
-        container_record_t *item_busca = &loaded_data.search[i];
+    fiscal_item_t *inspection_list = malloc(loaded_data.container_selected * sizeof(fiscal_item_t));
+    if (!inspection_list) {
+        printf("Erro ao alocar lista de inspecao\n");
+        exit(1);
+    }
+    uint32_t items_to_inspect_count = 0; // Contador de quantos itens encontramos
 
-        // Procura o 'code' na tabela hash (que contem os dados de 'info')
+    // Loop ÚNICO de processamento
+    for (uint32_t i = 0; i < loaded_data.container_selected; i++){
+        
+        container_record_t *item_busca = &loaded_data.search[i];
         container_record_t *item_cadastrado = search_hash(ht, item_busca->code);
 
-        if (!item_cadastrado){
-            if(strcmp(item_cadastrado->code, item_busca->code) == 0){
-                fprintf(output, "%s %s %u\n", item_busca->code, item_busca->cnpj, item_busca->peso);
+        fiscal_causa_t causa_encontrada = CAUSA_NENHUMA;
+
+        if (item_cadastrado != NULL) {
+            // Regra 1: CNPJ
+            if (strcmp(item_cadastrado->cnpj, item_busca->cnpj) != 0) {
+                causa_encontrada = CAUSA_CNPJ;
             }
-            // else if(){
-                // verificar peso percentual aqui
-            // }
-            else {
-                fprintf(output, "O container: |%s| |%s| |%u| nao foi encontrado\n", item_busca->code, item_busca->cnpj, item_busca->peso);
+            // Regra 2: Peso (só checa se CNPJ for igual)
+            else if (fiscalizar_peso(item_cadastrado->peso, item_busca->peso)) {
+                causa_encontrada = CAUSA_PESO;
             }
         }
+        // (Se não encontrou no cadastro, a causa é NENHUMA)
+
+        // Se encontramos uma causa, adiciona na lista de inspeção
+        if (causa_encontrada != CAUSA_NENHUMA) {
+            inspection_list[items_to_inspect_count].causa = causa_encontrada;
+            inspection_list[items_to_inspect_count].original_index = item_cadastrado->original_index;
+            inspection_list[items_to_inspect_count].data_cadastrado = *item_cadastrado; // Copia os dados
+            inspection_list[items_to_inspect_count].data_busca = *item_busca;         // Copia os dados
+            
+            items_to_inspect_count++; // Incrementa o contador
+        }
     }
+
+    // --- ETAPA 2: ORDENAR A LISTA (USANDO O SEU MERGE SORT!) ---
+
+    mymerge_sort(inspection_list,                  // O array
+                 items_to_inspect_count,           // O número de elementos
+                 sizeof(fiscal_item_t),            // O tamanho de cada elemento
+                 compare_fiscal_item);             // A nova função de comparação
+
+    // --- ETAPA 3: IMPRIMIR A LISTA ORDENADA ---
+
+    for (uint32_t i = 0; i < items_to_inspect_count; i++) {
+        
+        fiscal_item_t *item = &inspection_list[i];
+
+        if (item->causa == CAUSA_CNPJ) {
+            // Formato CNPJ
+            fprintf(output, "%s:%s<->%s\n", 
+                    item->data_busca.code, 
+                    item->data_cadastrado.cnpj,
+                    item->data_busca.cnpj);
+        }
+        else if (item->causa == CAUSA_PESO) {
+            // Formato PESO
+            uint32_t diff_peso = item->data_busca.peso - item->data_cadastrado.peso;
+            double perc = ((double)diff_peso / (double)item->data_cadastrado.peso) * 100.0;
+
+            fprintf(output, "%s:%ukg(%.0f%%)\n", 
+                    item->data_busca.code, 
+                    diff_peso,
+                    perc);
+        }
+    }
+
+    // --- LIBERAÇÃO DE MEMÓRIA ---
     
-    //liberando memoria, fechando arquivos
+    free(inspection_list); // Libera o array temporário
+    
     free_hash_table(ht);
     ht = NULL;
-    if(loaded_data.info) {
-        free(loaded_data.info);
-        loaded_data.info = NULL;
-    };
-    if(loaded_data.search) {
-        free(loaded_data.search);
-        loaded_data.search = NULL;
-    };
+    
+    if(loaded_data.info) free(loaded_data.info);
+    if(loaded_data.search) free(loaded_data.search);
+    
     fclose(input);
     fclose(output);
     return 0;
