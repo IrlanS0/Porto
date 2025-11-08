@@ -5,6 +5,6 @@ meu_programa
 # Ignorar a pasta de saídas de teste
 /saida_testes/
 
-# (Opcional) Ignorar arquivos de configuração de editor
+# Ignorar arquivos de configuração de editor
 .vscode/
 *.swp

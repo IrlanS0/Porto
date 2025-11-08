@@ -146,10 +146,10 @@ int main(int argc, char *argv[]) {
     }
 
     // 5. Etapa de Ordenação (Usando o módulo)
-    mymerge_sort(inspection_list,
-                 items_to_inspect_count,
-                 sizeof(fiscal_item_t),
-                 compare_fiscal_item);
+    mymerge_sort(inspection_list, 
+        items_to_inspect_count,
+        sizeof(fiscal_item_t),
+        compare_fiscal_item);
 
     // 6. Etapa de Impressão
     for (uint32_t i = 0; i < items_to_inspect_count; i++) {

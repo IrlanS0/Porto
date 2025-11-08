@@ -1,7 +1,9 @@
 # --- Configuração Portátil ---
 CC = gcc
 CFLAGS = -Wall -g -std=c99
+LDFLAGS = -lm # <-- NOVO: Biblioteca de matemática (para 'fiscalizar_peso')
 
+# --- Detecção de Sistema (A Mágica) ---
 # --- Detecção de Sistema (A Mágica) ---
 EXECUTABLE = meu_programa
 # Assume comandos Unix por padrão
@@ -12,19 +14,24 @@ EXEC_PREFIX = ./
 
 # Se o 'make' detectar que está no Windows...
 ifeq ($(OS),Windows_NT)
-    EXECUTABLE := $(EXECUTABLE).exe
-    RM = del /f /q
-    RM_DIR = rmdir /s /q
-    MKDIR_CMD = @mkdir $(OUTPUT_DIR) 2>NUL || exit 0
-    EXEC_PREFIX = .\
+	EXECUTABLE := $(EXECUTABLE).exe
+	RM = del /f /q
+	RM_DIR = rmdir /s /q
+	MKDIR_CMD = @mkdir $(OUTPUT_DIR) 2>NUL || exit 0
+	EXEC_PREFIX = .\
 else
 	EXEC_PREFIX = ./
 endif
 # Fim do bloco ifeq (NÃO PODE ter espaço antes)
+# Fim do bloco ifeq
 
 # --- Arquivos do Projeto ---
-SRC_FILE = src/index.c
 OUTPUT_DIR = saida_testes
+
+# --- MUDANÇA: Definir TODOS os arquivos .c e .h ---
+SRCS = src/main.c src/hash_table.c src/mergesort.c
+OBJS = $(SRCS:.c=.o)
+HDRS = structs.h hash_table.h mergesort.h
 
 # --- Descoberta Automática de Testes ---
 INPUTS = $(wildcard testes/*.txt)
@@ -35,19 +42,31 @@ OUTPUTS = $(patsubst testes/%.txt, $(OUTPUT_DIR)/%.out, $(INPUTS))
 
 all: $(EXECUTABLE)
 
-$(EXECUTABLE): $(SRC_FILE)
-	$(CC) $(CFLAGS) -o $@ $(SRC_FILE)
+# --- MUDANÇA: Regra de LINKAGEM ---
+# O executável depende dos arquivos .o
+$(EXECUTABLE): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
 
+# --- NOVO: Regra de COMPILAÇÃO (Pattern Rule) ---
+# Como transformar CADA .c em um .o
+# Se qualquer header (HDRS) mudar, recompila o .o
+%.o: %.c $(HDRS)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# --- Regra de Teste (Sem mudanças, mas depende de 'all') ---
 test: all $(OUTPUTS)
 	@echo "--- Todos os testes foram gerados! ---"
 
+# Esta regra está perfeita
 $(OUTPUT_DIR)/%.out: testes/%.txt $(EXECUTABLE)
 	$(MKDIR_CMD)
 	@echo "Rodando teste: $< ..."
 	$(EXEC_PREFIX)$(EXECUTABLE) $< $@
 
+# --- MUDANÇA: Limpar os arquivos .o também ---
 clean:
 	@echo "Limpando..."
-	@-$(RM) $(EXECUTABLE) 2>NUL
-	@-$(RM_DIR) $(OUTPUT_DIR) 2>NUL
+	@-del /f /q $(EXECUTABLE)
+	@-del /f /q src\*.o
+	@-rmdir /s /q $(OUTPUT_DIR)
 	@echo "Limpo!"
