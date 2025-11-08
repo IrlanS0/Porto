@@ -9,20 +9,24 @@ typedef struct {
     char code[12];
     char cnpj[20];
     uint32_t peso;
-} container_info;
-
-typedef struct {
-    char code[12];
-    char cnpj[20];
-    uint32_t peso;
-} container_search;
+} container_record_t;
 
 typedef struct {
     uint32_t container_size;
     uint32_t container_selected;
-    container_info *info;
-    container_search *search;
+    container_record_t *info;
+    container_record_t *search;
 } container_t;
+// Nó da lista ligada(Guarda o nó e o ponteiro para o próximo nó)
+typedef struct {
+    container_record_t data; // dado completo do container_record_t
+    struct hash_node_t *next; // Ponteiro para o próximo nó(tratamento da colisão)
+}hash_node_t;
+// Estrutura da Tabela Hash
+typedef struct {
+    hash_node_t **table; // Array de ponteiros para tabela hash_node_t
+    uint32_t size; // Tamanho do array
+}hash_table_t;
 
 /*
     @brief: lê o arquivo e cria as structs
@@ -40,7 +44,7 @@ container_t loading_memory(FILE *input) {
     // printf("[DEBUG] container_size: %u\n", container.container_size);
     
     //alocando memoria para container.info 
-    container.info = malloc(container.container_size * sizeof(container_info));
+    container.info = malloc(container.container_size * sizeof(container_record_t));
     if(!container.info) {
         printf("Erro ao alocar memoria para: info\n");
         exit(1);
@@ -67,7 +71,7 @@ container_t loading_memory(FILE *input) {
     // printf("[DEBUG] container_selected: %u\n", container.container_selected);
     
     //alocando memoria para container.search
-    container.search = malloc(container.container_selected * sizeof(container_search));
+    container.search = malloc(container.container_selected * sizeof(container_record_t));
     if(!container.search) {
         printf("Erro ao alocar memoria para: search\n");
         free(container.info);
@@ -92,8 +96,8 @@ container_t loading_memory(FILE *input) {
     @brief: função que faz operação de comparação
 */
 int compare(const void *key, const void *item) {
-    const container_info *search_key = (container_info *)key;
-    const container_info *search_item = (container_info *)item;
+    const container_record_t *search_key = (container_record_t *)key;
+    const container_record_t *search_item = (container_record_t *)item;
     return strcmp(search_key->code, search_item->code);
 };
 
@@ -122,7 +126,6 @@ void merge(void *arr, uint32_t init, uint32_t mid, uint32_t end, size_t element_
             k++;
         }
     }
-
 
     // se ainda houver elementos na primeira metade
     while(i <= mid)
@@ -173,30 +176,38 @@ void mymerge_sort(void *arr, size_t elements_size, size_t size, int (*compare)(c
 }
 
 /*
+    @brief: função para hash(DJB2)
+*/
+uint64_t string_hash(const char *str, unsigned int N){
+    unsigned int hash_value = 5381;
+    int c;
+
+    while((c = *str++)){
+        // hash = hash * 33 + c
+        hash_value = ((hash_value << 5) + hash_value) + c; 
+    }
+
+    return hash_value % N;
+}
+
+/*
     @brief: função principal
 */
-int main(int argc, char *argv[]) {
+int main(char *argv[]) {
     // abrindo arquivos
-    if(argc < 3) {
-        printf("Usage: %s <file>\n", argv[0]);
-        return 1;
-    };
     FILE *input = fopen(argv[1], "r");
     if(input == NULL) {
-        printf("Error opening input file\n");
+        printf("Erro ao abrir arquivo de entrada\n");
         return 1;
     };
     FILE *output = fopen(argv[2], "w");
     if(output == NULL) {
-        printf("Error opening output file\n");
+        printf("Erro ao abrir arquivo de saida\n");
         return 1;
     };
 
     // carregando memoria
     container_t loaded_data = loading_memory(input);
-
-    // ordenando vetor
-    mymerge_sort(loaded_data.info, loaded_data.container_size, sizeof(container_info), compare);
     
     //liberando memoria, fechando arquivos
     if(loaded_data.info) {
