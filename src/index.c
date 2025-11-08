@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#define HASH_TABLE_SIZE 10007 // Numero grande primo 
 /*
     @brief: cria structs para o programa
 */
@@ -18,12 +19,12 @@ typedef struct {
     container_record_t *search;
 } container_t;
 // Nó da lista ligada(Guarda o nó e o ponteiro para o próximo nó)
-typedef struct {
+typedef struct hash_node{
     container_record_t data; // dado completo do container_record_t
-    struct hash_node_t *next; // Ponteiro para o próximo nó(tratamento da colisão)
+    struct hash_node *next; // Ponteiro para o próximo nó(tratamento da colisão)
 }hash_node_t;
 // Estrutura da Tabela Hash
-typedef struct {
+typedef struct hash_table{
     hash_node_t **table; // Array de ponteiros para tabela hash_node_t
     uint32_t size; // Tamanho do array
 }hash_table_t;
@@ -190,11 +191,72 @@ uint64_t string_hash(const char *str, unsigned int N){
     return hash_value % N;
 }
 
+/*  
+    @brief: cria tabela hash
+*/
+hash_table_t *create_hash_table(uint32_t size){
+    hash_table_t *ht = (hash_table_t *)malloc(sizeof(hash_table_t));
+    if(!ht){
+        printf("Erro ao alocar memoria para: table\n");
+        return NULL;
+    };
+    
+    ht->size = size;
+    ht->table = (hash_node_t **)calloc(size, sizeof(hash_node_t*));
+    if(!ht->table){
+        printf("Erro ao alocar memoria para: table->table\n");
+        free(ht);
+        return NULL;
+    };
+    return ht;
+};
+
+/*
+    @brief: insere na tabela hash
+*/
+void insert_hash(hash_table_t *ht, container_record_t data){
+    hash_node_t *new_node = (hash_node_t *)malloc(sizeof(hash_node_t));
+    if (!new_node){
+        printf("Erro ao alocar memoria para: novo no\n");
+        exit(1);
+    };
+    // Preencher os nos com os dados
+    new_node->data = data;
+    
+    // Calcular o indice onde o no deve ir 
+    uint64_t index = string_hash(data.code, ht->size);
+
+    // Logica de inserção (Encadeamento O(1))
+    // O next do novo no aponta para o que estava no inicio da lista
+    new_node->next = ht->table[index];
+
+    // A cabeça da lista(o ponteiro no array) agora aponta para o novo nó
+    ht->table[index] = new_node;
+};
+
+/*
+    @brief: procura na tabela hash
+*/
+container_record_t *search_hash(hash_table_t *ht, char *code){
+    
+};
+
+/*
+    @brief: libera memoria alocada para tabela hash
+*/
+void free_hash_table(hash_table_t *ht){
+
+};
+
 /*
     @brief: função principal
 */
-int main(char *argv[]) {
+int main(int argc, char *argv[]) {
     // abrindo arquivos
+    if(argc < 3) {
+    printf("Uso: %s <arquivo_entrada> <arquivo_saida>\n", argv[0]);
+    return 1;
+    };
     FILE *input = fopen(argv[1], "r");
     if(input == NULL) {
         printf("Erro ao abrir arquivo de entrada\n");
@@ -208,6 +270,20 @@ int main(char *argv[]) {
 
     // carregando memoria
     container_t loaded_data = loading_memory(input);
+
+    // Criar tabela hash
+    hash_table_t *ht = create_hash_table(HASH_TABLE_SIZE);
+    if (!ht)
+    {
+        printf("Erro ao criar tabela hash\n");
+        exit(1);
+    };
+
+    // Preencher tabela hash com os dados de 'container_info'
+    for (int i = 0; i < loaded_data.container_size; i++)
+    {
+        insert_hash(ht, loaded_data.info[i]);
+    };
     
     //liberando memoria, fechando arquivos
     if(loaded_data.info) {
