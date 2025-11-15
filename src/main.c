@@ -2,61 +2,73 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <float.h>
+#include <math.h>
 
 // Incluindo módulos
 #include "structs.h"
 #include "hash_table.h"
 #include "mergesort.h"
 
-#define HASH_TABLE_SIZE 10007 // Numero grande primo 
+#define HASH_TABLE_SIZE 10007 // Numero grande primo
 
 /*
     @brief: lê o arquivo e cria as structs
 */
-container_t loading_memory(FILE *input) {
+container_t loading_memory(FILE *input)
+{
+    // (Implementação do loading_memory... exatamente como você escreveu)
     container_t container;
-    
-    if(fscanf(input, "%u", &container.container_size) != 1){
+
+    if (fscanf(input, "%u", &container.container_size) != 1)
+    {
         printf("Erro ao ler a linha: 1\n");
         container.container_size = 0;
         container.info = NULL;
         exit(1);
     };
     fgetc(input);
-    
+
     container.info = malloc(container.container_size * sizeof(container_record_t));
-    if(!container.info) {
+    if (!container.info)
+    {
         printf("Erro ao alocar memoria para: info\n");
         exit(1);
     };
-    
+
     uint32_t tmp = 0;
-    while(tmp < container.container_size) {
-        if(fscanf(input, "%s %s %u", container.info[tmp].code, container.info[tmp].cnpj, &container.info[tmp].peso) != 3) {
+    while (tmp < container.container_size)
+    {
+        if (fscanf(input, "%s %s %u", container.info[tmp].code, container.info[tmp].cnpj, &container.info[tmp].peso) != 3)
+        {
             printf("Erro ao ler a linha: %u\n", tmp + 1);
             break;
         }
         container.info[tmp].original_index = tmp;
         tmp++;
     }
-    
-    if(fscanf(input, "%u", &container.container_selected) != 1){
+
+    if (fscanf(input, "%u", &container.container_selected) != 1)
+    {
         printf("Erro ao ler a linha: %u\n", container.container_size + 1);
         container.container_selected = 0;
         exit(1);
     };
     fgetc(input);
-    
+
     container.search = malloc(container.container_selected * sizeof(container_record_t));
-    if(!container.search) {
+    if (!container.search)
+    {
         printf("Erro ao alocar memoria para: search\n");
         free(container.info);
         exit(1);
     };
-    
+
     tmp = 0;
-    while(tmp < container.container_selected) {
-        if(fscanf(input, "%s %s %u", container.search[tmp].code, container.search[tmp].cnpj, &container.search[tmp].peso) != 3) {
+    while (tmp < container.container_selected)
+    {
+        if (fscanf(input, "%s %s %u", container.search[tmp].code, container.search[tmp].cnpj, &container.search[tmp].peso) != 3)
+        {
             printf("Erro ao ler a linha: %u\n", container.container_selected + tmp + 1);
             break;
         }
@@ -67,103 +79,233 @@ container_t loading_memory(FILE *input) {
 }
 
 /*
-    @brief: verifica se peso do container é válido
+    @brief: função que calcula porcentagem (VERSÃO CORRIGIDA)
 */
-int fiscalizar_peso(uint32_t peso_cadastrado, uint32_t peso_selecionado){
+double calculate_percentual(uint32_t peso_cadastrado, uint32_t peso_selecionado)
+{
+    if (peso_cadastrado == 0)
+    {
+        if (peso_selecionado == 0)
+        {
+            return 0.0;
+        }
+
+        return DBL_MAX;
+    }
+
     double a = (double)peso_cadastrado;
     double b = (double)peso_selecionado;
-    double limite = a * 1.1;
-    if(b > limite){
+    double diff_abs;
+    if (b > a)
+    {
+        diff_abs = b - a;
+    }
+    else
+    {
+        diff_abs = a - b;
+    }
+
+    return diff_abs / a;
+}
+
+/*
+    @brief: verifica se peso do container é válido
+*/
+int fiscalizar_peso(uint32_t peso_cadastrado, uint32_t peso_selecionado)
+{
+    double diff_percentual = calculate_percentual(peso_cadastrado, peso_selecionado);
+
+    if (diff_percentual > 0.105)
+    {
         return 1;
     }
+
     return 0;
 }
 
 /*
-    @brief: Compara dois itens de fiscalização (para o Merge Sort)
+    @brief: Compara dois itens de fiscalização
 */
-int compare_fiscal_item(const void *a, const void *b) {
+int compare_fiscal_item(const void *a, const void *b)
+{
     const fiscal_item_t *itemA = (const fiscal_item_t *)a;
     const fiscal_item_t *itemB = (const fiscal_item_t *)b;
 
-    if (itemA->causa != itemB->causa) {
-        return (itemA->causa - itemB->causa);
+    // Prioridade 1: Causa (Assumindo CAUSA_CNPJ = 1, CAUSA_PESO = 2)
+    if (itemA->causa != itemB->causa)
+    {
+        return (itemA->causa - itemB->causa); // CNPJ (1) vem antes de PESO (2)
     }
-    return (itemA->original_index - itemB->original_index);
+
+    if (itemA->causa == CAUSA_CNPJ)
+    {
+        // Se chegou aqui, a causa é a mesma. Vamos desempatar.
+        if (itemA->original_index < itemB->original_index)
+        {
+            return -1; // A vem antes
+        }
+        else if (itemA->original_index > itemB->original_index)
+        {
+            return 1; // A vem depois
+        }
+        else
+        {
+            return 0; // São iguais (não deve acontecer)
+        }
+    }
+    else if (itemA->causa == CAUSA_PESO)
+    {
+        // Causa é PESO. Desempate é a MAIOR variância (ordem DECRESCENTE).
+        double percentualA = calculate_percentual(itemA->data_cadastrado.peso, itemA->data_busca.peso) * 100;
+        double percentualB = calculate_percentual(itemB->data_cadastrado.peso, itemB->data_busca.peso) * 100;
+
+        if (round(percentualA) == round(percentualB))
+        {
+            if (itemA->original_index < itemB->original_index)
+            {
+                return -1;
+            }
+            else if (itemA->original_index > itemB->original_index)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        else if (round(percentualA) > round(percentualB))
+        {
+            return -1;
+        }
+        else if (round(percentualA) < round(percentualB))
+        {
+            return 1;
+        }
+    }
+
+    // Fallback (caso tenha uma CAUSA_NENHUMA por algum motivo)
+    if (itemA->original_index < itemB->original_index)
+    {
+        return -1;
+    }
+    else if (itemA->original_index > itemB->original_index)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 /*
     @brief: função principal
 */
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     // 1. Abertura de Arquivos
-    if(argc < 3) {
+    if (argc < 3)
+    {
         printf("Uso: %s <arquivo_entrada> <arquivo_saida>\n", argv[0]);
         return 1;
     };
     FILE *input = fopen(argv[1], "r");
-    if(input == NULL) { /* ... erro */ };
+    if (input == NULL)
+    {
+        printf("Erro ao abrir o arquivo de entrada\n");
+        return 1;
+    };
     FILE *output = fopen(argv[2], "w");
-    if(output == NULL) { /* ... erro */ };
+    if (output == NULL)
+    {
+        fclose(input);
+        printf("Erro ao abrir o arquivo de saida\n");
+        return 1;
+    };
 
     // 2. Carregar Dados
     container_t loaded_data = loading_memory(input);
 
     // 3. Criar e Popular a Tabela Hash (Usando o módulo)
     hash_table_t *ht = create_hash_table(HASH_TABLE_SIZE);
-    if (!ht) { exit(1); };
-    for (int i = 0; i < loaded_data.container_size; i++) {
+    if (!ht)
+    {
+        exit(1);
+    };
+    for (int i = 0; i < loaded_data.container_size; i++)
+    {
         insert_hash(ht, loaded_data.info[i]);
     };
 
     // 4. Etapa de Coleta (Lógica de Negócio)
     fiscal_item_t *inspection_list = malloc(loaded_data.container_selected * sizeof(fiscal_item_t));
-    if (!inspection_list) { exit(1); }
-    uint32_t items_to_inspect_count = 0;
+    if (!inspection_list)
+    {
+        printf("Erro ao alocar memoria para: inspection_list\n");
+        exit(1);
+    }
 
-    for (uint32_t i = 0; i < loaded_data.container_selected; i++){
+    uint32_t items_to_inspect_count = 0;
+    for (uint32_t i = 0; i < loaded_data.container_selected; i++)
+    {
         container_record_t *item_busca = &loaded_data.search[i];
         container_record_t *item_cadastrado = search_hash(ht, item_busca->code); // Usa o módulo
         fiscal_causa_t causa_encontrada = CAUSA_NENHUMA;
 
-        if (item_cadastrado != NULL) {
-            if (strcmp(item_cadastrado->cnpj, item_busca->cnpj) != 0) {
+        if (item_cadastrado != NULL)
+        {
+            if (strcmp(item_cadastrado->cnpj, item_busca->cnpj) != 0)
+            {
                 causa_encontrada = CAUSA_CNPJ;
             }
-            else if (fiscalizar_peso(item_cadastrado->peso, item_busca->peso)) {
+            else if (fiscalizar_peso(item_cadastrado->peso, item_busca->peso))
+            {
                 causa_encontrada = CAUSA_PESO;
             }
         }
-        
-        if (causa_encontrada != CAUSA_NENHUMA) {
+
+        if (causa_encontrada != CAUSA_NENHUMA)
+        {
             inspection_list[items_to_inspect_count].causa = causa_encontrada;
             inspection_list[items_to_inspect_count].original_index = item_cadastrado->original_index;
             inspection_list[items_to_inspect_count].data_cadastrado = *item_cadastrado;
-            inspection_list[items_to_inspect_count].data_busca = *item_busca;         
+            inspection_list[items_to_inspect_count].data_busca = *item_busca;
             items_to_inspect_count++;
         }
     }
 
     // 5. Etapa de Ordenação (Usando o módulo)
-    mymerge_sort(inspection_list, 
-        items_to_inspect_count,
-        sizeof(fiscal_item_t),
-        compare_fiscal_item);
+    mymerge_sort(inspection_list,
+                 items_to_inspect_count,
+                 sizeof(fiscal_item_t),
+                 compare_fiscal_item);
 
     // 6. Etapa de Impressão
-    for (uint32_t i = 0; i < items_to_inspect_count; i++) {
+    for (uint32_t i = 0; i < items_to_inspect_count; i++)
+    {
         fiscal_item_t *item = &inspection_list[i];
-        if (item->causa == CAUSA_CNPJ) {
-            fprintf(output, "%s:%s<->%s\n", 
-                    item->data_busca.code, 
+        if (item->causa == CAUSA_CNPJ)
+        {
+            fprintf(output, "%s:%s<->%s\n",
+                    item->data_busca.code,
                     item->data_cadastrado.cnpj,
                     item->data_busca.cnpj);
         }
-        else if (item->causa == CAUSA_PESO) {
-            uint32_t diff_peso = item->data_busca.peso - item->data_cadastrado.peso;
+        else if (item->causa == CAUSA_PESO)
+        {
+            uint32_t diff_peso;
+            if (item->data_busca.peso > item->data_cadastrado.peso)
+            {
+                diff_peso = item->data_busca.peso - item->data_cadastrado.peso;
+            }
+            else
+            {
+                diff_peso = item->data_cadastrado.peso - item->data_busca.peso;
+            }
             double perc = ((double)diff_peso / (double)item->data_cadastrado.peso) * 100.0;
-            fprintf(output, "%s:%ukg(%.0f%%)\n", 
-                    item->data_busca.code, 
+            fprintf(output, "%s:%ukg(%.0f%%)\n",
+                    item->data_busca.code,
                     diff_peso,
                     perc);
         }
@@ -173,9 +315,11 @@ int main(int argc, char *argv[]) {
     free(inspection_list);
     free_hash_table(ht); // Usa o módulo
     ht = NULL;
-    if(loaded_data.info) free(loaded_data.info);
-    if(loaded_data.search) free(loaded_data.search);
-    
+    if (loaded_data.info)
+        free(loaded_data.info);
+    if (loaded_data.search)
+        free(loaded_data.search);
+
     fclose(input);
     fclose(output);
     return 0;

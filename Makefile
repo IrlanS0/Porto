@@ -1,7 +1,7 @@
 # --- Configuração Portátil ---
 CC = gcc
 CFLAGS = -Wall -g -std=c99
-LDFLAGS = -lm # <-- NOVO: Biblioteca de matemática (para 'fiscalizar_peso')
+LDFLAGS = -lm 
 
 # --- Detecção de Sistema (A Mágica) ---
 # --- Detecção de Sistema (A Mágica) ---
