@@ -76,7 +76,7 @@ container_t loading_memory(FILE *input)
     }
 
     return container;
-} 
+}
 
 /*
     @brief: função que calcula porcentagem (VERSÃO CORRIGIDA)
@@ -85,11 +85,12 @@ double calculate_percentual(uint32_t peso_cadastrado, uint32_t peso_selecionado)
 {
     if (peso_cadastrado == 0)
     {
-        if (peso_selecionado == 0) {
+        if (peso_selecionado == 0)
+        {
             return 0.0;
         }
 
-        return DBL_MAX; 
+        return DBL_MAX;
     }
 
     double a = (double)peso_cadastrado;
@@ -136,16 +137,18 @@ int compare_fiscal_item(const void *a, const void *b)
         return (itemA->causa - itemB->causa); // CNPJ (1) vem antes de PESO (2)
     }
 
-    if(itemA->causa == CAUSA_CNPJ){
+    if (itemA->causa == CAUSA_CNPJ)
+    {
         // Se chegou aqui, a causa é a mesma. Vamos desempatar.
-        if (itemA->original_index < itemB->original_index) 
+        if (itemA->original_index < itemB->original_index)
         {
-        return -1; // A vem antes
-        } 
+            return -1; // A vem antes
+        }
         else if (itemA->original_index > itemB->original_index)
         {
             return 1; // A vem depois
-        } else 
+        }
+        else
         {
             return 0; // São iguais (não deve acontecer)
         }
@@ -156,15 +159,16 @@ int compare_fiscal_item(const void *a, const void *b)
         double percentualA = calculate_percentual(itemA->data_cadastrado.peso, itemA->data_busca.peso) * 100;
         double percentualB = calculate_percentual(itemB->data_cadastrado.peso, itemB->data_busca.peso) * 100;
 
-        if (round(percentualA) == round(percentualB)){
+        if (round(percentualA) == round(percentualB))
+        {
             if (itemA->original_index < itemB->original_index)
             {
                 return -1;
-            } 
-            else if (itemA->original_index > itemB->original_index) 
+            }
+            else if (itemA->original_index > itemB->original_index)
             {
                 return 1;
-            } 
+            }
             else
             {
                 return 0;
@@ -181,15 +185,15 @@ int compare_fiscal_item(const void *a, const void *b)
     }
 
     // Fallback (caso tenha uma CAUSA_NENHUMA por algum motivo)
-    if (itemA->original_index < itemB->original_index) 
+    if (itemA->original_index < itemB->original_index)
     {
         return -1;
-    } 
-    else if (itemA->original_index > itemB->original_index) 
-    { 
+    }
+    else if (itemA->original_index > itemB->original_index)
+    {
         return 1;
-    } 
-    else 
+    }
+    else
     {
         return 0;
     }
@@ -273,10 +277,10 @@ int main(int argc, char *argv[])
 
     // 5. Etapa de Ordenação (Usando o módulo)
     mymerge_sort(inspection_list,
-                items_to_inspect_count,
-                sizeof(fiscal_item_t),
-                compare_fiscal_item);
-    
+                 items_to_inspect_count,
+                 sizeof(fiscal_item_t),
+                 compare_fiscal_item);
+
     // 6. Etapa de Impressão
     for (uint32_t i = 0; i < items_to_inspect_count; i++)
     {
