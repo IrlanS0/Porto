@@ -5,7 +5,7 @@
 #include <float.h>
 #include <math.h>
 
-// Incluindo nossos módulos
+// Incluindo módulos
 #include "structs.h"
 #include "hash_table.h"
 #include "mergesort.h"
