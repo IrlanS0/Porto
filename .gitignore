@@ -8,3 +8,4 @@ meu_programa
 # Ignorar arquivos de configuração de editor
 .vscode/
 *.swp
+*.o
