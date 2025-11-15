@@ -5,7 +5,7 @@ LDFLAGS = -lm
 
 # --- Detecção de Sistema (A Mágica) ---
 # --- Detecção de Sistema (A Mágica) ---
-EXECUTABLE = meu_programa
+EXECUTABLE = main
 # Assume comandos Unix por padrão
 RM = rm -f
 RM_DIR = rm -rf
@@ -26,7 +26,7 @@ endif
 # Fim do bloco ifeq
 
 # --- Arquivos do Projeto ---
-OUTPUT_DIR = saida_testes
+OUTPUT_DIR = build
 
 # --- MUDANÇA: Definir TODOS os arquivos .c e .h ---
 SRCS = src/main.c src/hash_table.c src/mergesort.c
@@ -34,8 +34,8 @@ OBJS = $(SRCS:.c=.o)
 HDRS = structs.h hash_table.h mergesort.h
 
 # --- Descoberta Automática de Testes ---
-INPUTS = $(wildcard testes/*.txt)
-OUTPUTS = $(patsubst testes/%.txt, $(OUTPUT_DIR)/%.out, $(INPUTS))
+INPUTS = $(wildcard tests/*.txt)
+OUTPUTS = $(patsubst tests/%.txt, $(OUTPUT_DIR)/%.out, $(INPUTS))
 
 # --- "Receitas" (Targets) ---
 .PHONY: all test clean
@@ -55,10 +55,10 @@ $(EXECUTABLE): $(OBJS)
 
 # --- Regra de Teste (Sem mudanças, mas depende de 'all') ---
 test: all $(OUTPUTS)
-	@echo "--- Todos os testes foram gerados! ---"
+	@echo "--- Todos os tests foram gerados! ---"
 
 # Esta regra está perfeita
-$(OUTPUT_DIR)/%.out: testes/%.txt $(EXECUTABLE)
+$(OUTPUT_DIR)/%.out: tests/%.txt $(EXECUTABLE)
 	$(MKDIR_CMD)
 	@echo "Rodando teste: $< ..."
 	$(EXEC_PREFIX)$(EXECUTABLE) $< $@

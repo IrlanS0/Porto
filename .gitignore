@@ -1,9 +1,9 @@
 # Ignorar o executável compilado
 *.exe
-meu_programa
+main
 
 # Ignorar a pasta de saídas de teste
-/saida_testes/
+/build/
 
 # Ignorar arquivos de configuração de editor
 .vscode/
