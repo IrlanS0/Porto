@@ -53,8 +53,10 @@ Os `n` contêineres do cadastro são armazenados em uma **Tabela Hash** (Hashing
 
 Os `k` contêineres que apresentam discrepâncias são adicionados a um vetor. Este vetor é então ordenado usando **MergeSort**.
 * **Por quê?** O MergeSort garante complexidade **O(k log k)** no pior caso e é um algoritmo de ordenação estável.
-* **Função de Comparação:** A complexidade real está na função `compare()`, que implementa a regra de negócio de múltiplas prioridades (primeiro por tipo de prioridade, depois por percentual decrescente).
-
+* **Função de Comparação:** A complexidade real está na função `compare_fiscal_item()`, que implementa a regra de negócio de múltiplas prioridades para criar a fila de fiscalização:
+1. ***Nível de prioridade***: Contêineres com Causa 1 (Divergência de CNPJ) sempre vêm antes de contêineres com Causa 2 (Diferença de Peso).
+2. ***Ordenação Causa 1***: Se dois contêineres são ambos da Causa 1, eles são exibidos por ordem de entrada(First-in-First-out). 
+3. ***Ordenação da Causa 2***: Se dois contêineres são ambos da Causa 2, eles são ordenados pela maior diferença percentual de peso, em ordem decrescente. Caso a diferença percentual seja a mesma, são ordenados por ordem de entrada.
 <br>
 
 ## 🛠️ Stack Tecnológica
