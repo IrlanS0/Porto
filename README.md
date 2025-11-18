@@ -55,7 +55,7 @@ Os `k` contêineres que apresentam discrepâncias são adicionados a um vetor. E
 * **Por quê?** O MergeSort garante complexidade **O(k log k)** no pior caso e é um algoritmo de ordenação estável.
 * **Função de Comparação:** A complexidade real está na função `compare_fiscal_item()`, que implementa a regra de negócio de múltiplas prioridades para criar a fila de fiscalização:
 1. ***Nível de prioridade***: Contêineres com Causa 1 (Divergência de CNPJ) sempre vêm antes de contêineres com Causa 2 (Diferença de Peso).
-2. ***Ordenação Causa 1***: Se dois contêineres são ambos da Causa 1, eles são exibidos por ordem de entrada(First-in-First-out). 
+2. ***Ordenação Causa 1***: Se dois contêineres são ambos da Causa 1, eles são exibidos por ordem de entrada (First-in-First-out). 
 3. ***Ordenação da Causa 2***: Se dois contêineres são ambos da Causa 2, eles são ordenados pela maior diferença percentual de peso, em ordem decrescente. Caso a diferença percentual seja a mesma, são ordenados por ordem de entrada.
 <br>
 
@@ -83,8 +83,8 @@ Abra o terminal na raiz do projeto e execute:
 
 | Comando | Ação |
 | :--- | :--- |
-| `make all` (ou `mingw32-make all`) | **Compila** o executável `meu_programa` (ou `.exe`). |
-| `make test` (ou `mingw32-make test`) | **Roda todos os testes.** Encontra todos os `*.txt` na pasta `testes/`, executa o programa e salva os resultados em `saida_testes/`. |
-| `make clean` (ou `mingw32-make clean`) | **Limpa** o projeto, apagando o executável e a pasta `saida_testes/`. |
+| `make all` (ou `mingw32-make all`) | **Compila** o executável `main` (ou `.exe`). |
+| `make test` (ou `mingw32-make test`) | **Roda todos os testes.** Encontra todos os `*.txt` na pasta `tests/`, executa o programa e salva os resultados em `build/`. |
+| `make clean` (ou `mingw32-make clean`) | **Limpa** o projeto, apagando o executável e a pasta `build/`. |
 
 <br>
